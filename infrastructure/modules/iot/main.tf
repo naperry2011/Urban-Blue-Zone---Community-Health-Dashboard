@@ -43,7 +43,7 @@ resource "aws_iot_topic_rule" "vitals_rule" {
   sql_version = "2016-03-23"
   
   lambda {
-    function_arn = var.vitals_processor_arn != "" ? var.vitals_processor_arn : "arn:aws:lambda:us-east-1:123456789012:function:placeholder"
+    function_arn = var.vitals_processor_arn
   }
   
   error_action {
@@ -63,7 +63,7 @@ resource "aws_iot_topic_rule" "checkins_rule" {
   sql_version = "2016-03-23"
   
   lambda {
-    function_arn = var.checkins_processor_arn != "" ? var.checkins_processor_arn : "arn:aws:lambda:us-east-1:123456789012:function:placeholder"
+    function_arn = var.checkins_processor_arn
   }
   
   error_action {

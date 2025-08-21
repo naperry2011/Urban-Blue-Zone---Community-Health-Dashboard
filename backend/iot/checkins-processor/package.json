@@ -1,0 +1,16 @@
+{
+  "name": "iot-checkins-processor",
+  "version": "1.0.0",
+  "description": "Lambda function to process IoT habit check-ins data",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "package": "zip -r function.zip ."
+  },
+  "dependencies": {
+    "aws-sdk": "^2.1400.0"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0"
+  }
+}

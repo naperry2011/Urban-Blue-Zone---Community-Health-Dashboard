@@ -1,0 +1,17 @@
+{
+  "name": "ubz-iot-simulator",
+  "version": "1.0.0",
+  "description": "IoT device simulator for Urban Blue Zone",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "jest"
+  },
+  "dependencies": {
+    "aws-iot-device-sdk": "^2.2.12",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0"
+  }
+}
