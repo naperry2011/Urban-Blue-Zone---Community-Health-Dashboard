@@ -1,0 +1,30 @@
+{
+  "name": "urban-blue-zone",
+  "version": "0.1.0",
+  "description": "Urban Blue Zone - Community Health Dashboard",
+  "private": true,
+  "scripts": {
+    "dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "start": "cd frontend && npm run start",
+    "simulator": "node simulator/index.js",
+    "deploy:infrastructure": "cd infrastructure && terraform apply",
+    "deploy:frontend": "cd frontend && npm run deploy",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "health",
+    "monitoring",
+    "blue-zone",
+    "aws",
+    "iot",
+    "nextjs"
+  ],
+  "author": "",
+  "license": "MIT",
+  "workspaces": [
+    "frontend",
+    "backend/*",
+    "simulator"
+  ]
+}
