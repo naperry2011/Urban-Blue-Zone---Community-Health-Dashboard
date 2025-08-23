@@ -128,3 +128,43 @@ resource "aws_lambda_permission" "iot_invoke_checkins" {
   function_name = aws_lambda_function.iot_checkins_processor.function_name
   principal     = "iot.amazonaws.com"
 }
+
+# Alert Processor Lambda
+resource "aws_lambda_function" "alert_processor" {
+  filename         = "${path.module}/../../../backend/alerts/alert-processor/function.zip"
+  function_name    = "${var.resource_prefix}-alert-processor"
+  role            = aws_iam_role.lambda_execution_role.arn
+  handler         = "index.handler"
+  source_code_hash = filebase64sha256("${path.module}/../../../backend/alerts/alert-processor/function.zip")
+  runtime         = var.runtime
+  timeout         = var.timeout
+  memory_size     = var.memory_size
+
+  environment {
+    variables = {
+      ALERTS_TABLE           = var.dynamodb_tables["alerts"]
+      DEDUP_TABLE           = "${var.resource_prefix}-alert-dedup"
+      SNS_CRITICAL_TOPIC_ARN = var.sns_critical_topic_arn
+      SNS_WELLNESS_TOPIC_ARN = var.sns_wellness_topic_arn
+      SES_FROM_EMAIL        = var.ses_from_email
+    }
+  }
+
+  tags = var.tags
+}
+
+# Lambda permission for EventBridge to invoke alert processor
+resource "aws_lambda_permission" "eventbridge_invoke_alerts" {
+  statement_id  = "AllowEventBridgeInvokeAlerts"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.alert_processor.function_name
+  principal     = "events.amazonaws.com"
+}
+
+# Lambda permission for DynamoDB Streams to invoke alert processor
+resource "aws_lambda_permission" "dynamodb_invoke_alerts" {
+  statement_id  = "AllowDynamoDBInvokeAlerts"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.alert_processor.function_name
+  principal     = "dynamodb.amazonaws.com"
+}

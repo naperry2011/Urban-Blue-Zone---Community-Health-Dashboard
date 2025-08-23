@@ -199,3 +199,30 @@ resource "aws_dynamodb_table" "aggregations" {
     Name = "${var.resource_prefix}-aggregations"
   })
 }
+
+# Alert Deduplication Table
+resource "aws_dynamodb_table" "alert_dedup" {
+  name           = "${var.resource_prefix}-alert-dedup"
+  billing_mode   = var.billing_mode
+  hash_key       = "alert_key"
+  range_key      = "window_start"
+  
+  attribute {
+    name = "alert_key"
+    type = "S"
+  }
+  
+  attribute {
+    name = "window_start"
+    type = "S"
+  }
+  
+  ttl {
+    enabled        = true
+    attribute_name = "ttl"
+  }
+  
+  tags = merge(var.tags, {
+    Name = "${var.resource_prefix}-alert-dedup"
+  })
+}

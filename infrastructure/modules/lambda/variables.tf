@@ -34,6 +34,21 @@ variable "sns_topic_arn" {
   default = ""
 }
 
+variable "sns_critical_topic_arn" {
+  type = string
+  default = ""
+}
+
+variable "sns_wellness_topic_arn" {
+  type = string
+  default = ""
+}
+
+variable "ses_from_email" {
+  type = string
+  default = "alerts@urbanblue.zone"
+}
+
 variable "tags" {
   type = map(string)
   default = {}

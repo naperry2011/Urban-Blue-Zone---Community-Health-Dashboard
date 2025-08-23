@@ -47,3 +47,13 @@ output "aggregations_table_arn" {
   description = "Aggregations table ARN"
   value       = aws_dynamodb_table.aggregations.arn
 }
+
+output "alert_dedup_table_name" {
+  description = "Alert deduplication table name"
+  value       = aws_dynamodb_table.alert_dedup.name
+}
+
+output "alert_dedup_table_arn" {
+  description = "Alert deduplication table ARN"
+  value       = aws_dynamodb_table.alert_dedup.arn
+}

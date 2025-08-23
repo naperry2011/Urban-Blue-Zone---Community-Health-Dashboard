@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Critical Health Alert - Urban Blue Zone</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: white;
+        }
+        .header {
+            background: linear-gradient(135deg, #FF4444 0%, #CC0000 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        .header .badge {
+            display: inline-block;
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        .content {
+            padding: 30px 20px;
+        }
+        .alert-box {
+            background-color: #FFF3F3;
+            border-left: 4px solid #FF4444;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .metric-card {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .metric-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+        .metric-value.critical {
+            color: #FF4444;
+        }
+        .action-section {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .action-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .action-list {
+            list-style: none;
+            padding: 0;
+        }
+        .action-list li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+        .action-list li:before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: #FF4444;
+            font-weight: bold;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+        .footer a {
+            color: #0066CC;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚠️ Critical Health Alert</h1>
+            <div class="badge">IMMEDIATE ATTENTION REQUIRED</div>
+        </div>
+        
+        <div class="content">
+            <div class="alert-box">
+                <strong>Alert Time:</strong> {{timestamp}}<br>
+                <strong>Resident ID:</strong> {{resident_id}}<br>
+                <strong>Alert Type:</strong> {{alert_type}}
+            </div>
+            
+            <h2>Current Vital Signs</h2>
+            <div class="metrics-grid">
+                {{#if blood_pressure}}
+                <div class="metric-card">
+                    <div class="metric-label">Blood Pressure</div>
+                    <div class="metric-value {{bp_class}}">{{blood_pressure}}</div>
+                </div>
+                {{/if}}
+                
+                {{#if heart_rate}}
+                <div class="metric-card">
+                    <div class="metric-label">Heart Rate</div>
+                    <div class="metric-value {{hr_class}}">{{heart_rate}} bpm</div>
+                </div>
+                {{/if}}
+                
+                {{#if oxygen_saturation}}
+                <div class="metric-card">
+                    <div class="metric-label">Oxygen Saturation</div>
+                    <div class="metric-value {{o2_class}}">{{oxygen_saturation}}%</div>
+                </div>
+                {{/if}}
+                
+                {{#if temperature}}
+                <div class="metric-card">
+                    <div class="metric-label">Temperature</div>
+                    <div class="metric-value {{temp_class}}">{{temperature}}°F</div>
+                </div>
+                {{/if}}
+            </div>
+            
+            <div class="action-section">
+                <div class="action-title">Immediate Actions Required</div>
+                <ul class="action-list">
+                    <li>Contact resident immediately to assess condition</li>
+                    <li>Review recent vital trends in dashboard</li>
+                    <li>Consider emergency services if unable to reach resident</li>
+                    <li>Document intervention in care notes</li>
+                </ul>
+            </div>
+            
+            {{#if additional_details}}
+            <div class="alert-box">
+                <strong>Additional Information:</strong><br>
+                {{additional_details}}
+            </div>
+            {{/if}}
+        </div>
+        
+        <div class="footer">
+            <p>This is an automated alert from Urban Blue Zone Monitoring System</p>
+            <p>Alert ID: {{alert_id}}</p>
+            <p><a href="{{dashboard_url}}">View Full Dashboard</a> | <a href="{{unsubscribe_url}}">Manage Alerts</a></p>
+        </div>
+    </div>
+</body>
+</html>

@@ -28,26 +28,40 @@ exports.handler = async (event) => {
     console.log('Processing check-in:', JSON.stringify(event));
     
     try {
-        // Extract data from IoT message
-        const {
-            residentId,
-            timestamp = new Date().toISOString(),
-            habitType,
-            data
-        } = event;
+        // Handle both old format and new enhanced format
+        let checkInData;
         
-        // Validate required fields
-        if (!residentId || !habitType || !data) {
-            throw new Error('Missing required fields: residentId, habitType, or data');
+        if (event.habits && event.ubziComponent) {
+            // New enhanced format from improved simulator
+            checkInData = {
+                residentId: event.residentId,
+                timestamp: event.timestamp || new Date().toISOString(),
+                type: event.type || 'habit_checkin',
+                habits: event.habits,
+                scores: event.scores,
+                ubziComponent: event.ubziComponent,
+                metadata: event.metadata
+            };
+        } else {
+            // Legacy format for backward compatibility
+            const {
+                residentId,
+                timestamp = new Date().toISOString(),
+                habitType,
+                data
+            } = event;
+            
+            // Validate required fields
+            if (!residentId || !habitType || !data) {
+                throw new Error('Missing required fields: residentId, habitType, or data');
+            }
+            
+            // Convert legacy format to new format
+            checkInData = await convertLegacyCheckIn(residentId, timestamp, habitType, data);
         }
         
-        // Validate habit type
-        if (!Object.values(HABIT_CATEGORIES).includes(habitType)) {
-            throw new Error(`Invalid habit type: ${habitType}`);
-        }
-        
-        // Process check-in based on type
-        const processedData = await processHabitData(habitType, data);
+        // Process the enhanced check-in
+        const processedData = await processEnhancedCheckIn(checkInData);
         
         // Store check-in record
         const checkinRecord = {
@@ -86,6 +100,193 @@ exports.handler = async (event) => {
         throw error;
     }
 };
+
+// Process enhanced check-in with all habits in one record
+async function processEnhancedCheckIn(checkInData) {
+    console.log('Processing enhanced check-in for:', checkInData.residentId);
+    
+    // Calculate overall UBZI if not provided
+    let ubziScore = checkInData.ubziComponent;
+    if (!ubziScore && checkInData.scores) {
+        ubziScore = calculateUBZI(checkInData.scores);
+    }
+    
+    // Store the comprehensive check-in record
+    await storeEnhancedCheckIn(checkInData, ubziScore);
+    
+    // Trigger habit analytics (streak calculation, alerts)
+    await triggerHabitAnalytics(checkInData);
+    
+    return {
+        residentId: checkInData.residentId,
+        timestamp: checkInData.timestamp,
+        ubziScore: ubziScore,
+        habits: Object.keys(checkInData.habits || {}),
+        processed: true
+    };
+}
+
+// Convert legacy single-habit check-in to new format
+async function convertLegacyCheckIn(residentId, timestamp, habitType, data) {
+    const processedData = await processHabitData(habitType, data);
+    
+    // Create enhanced format structure
+    const enhanced = {
+        residentId,
+        timestamp,
+        type: 'habit_checkin_legacy',
+        habits: {},
+        scores: {},
+        ubziComponent: 0,
+        metadata: {
+            legacyHabitType: habitType,
+            timeOfDay: getTimeOfDay(timestamp)
+        }
+    };
+    
+    // Map legacy habit types to new structure
+    switch (habitType) {
+        case HABIT_CATEGORIES.MOVE_NATURALLY:
+            enhanced.habits.movement = {
+                score: processedData.score,
+                steps: processedData.steps,
+                activeMinutes: processedData.activeMinutes,
+                category: processedData.score > 70 ? 'active' : processedData.score > 40 ? 'moderate' : 'low'
+            };
+            enhanced.scores.movement = processedData.score;
+            break;
+            
+        case HABIT_CATEGORIES.RIGHT_TRIBE:
+            enhanced.habits.social = {
+                interactionCount: processedData.interactions,
+                meaningfulConnections: processedData.meaningfulConnections,
+                category: processedData.interactions > 5 ? 'connected' : processedData.interactions > 2 ? 'moderate' : 'isolated'
+            };
+            enhanced.scores.social = processedData.score;
+            break;
+            
+        case HABIT_CATEGORIES.PLANT_SLANT:
+            enhanced.habits.nutrition = {
+                plantSlant: processedData.plantBasedMeals > 1 ? 'plant_heavy' : processedData.plantBasedMeals > 0 ? 'mixed' : 'processed',
+                plantBasedMeals: processedData.plantBasedMeals,
+                vegetableServings: processedData.vegetableServings
+            };
+            enhanced.scores.plantSlant = processedData.score;
+            break;
+            
+        case HABIT_CATEGORIES.DOWNSHIFT:
+            enhanced.habits.stress = {
+                level: processedData.stressLevel,
+                downshiftMinutes: processedData.meditationMinutes,
+                relaxationActivities: processedData.relaxationActivities,
+                category: processedData.stressLevel < 4 ? 'low' : processedData.stressLevel < 7 ? 'moderate' : 'high'
+            };
+            enhanced.scores.downshift = processedData.score;
+            break;
+            
+        case HABIT_CATEGORIES.PURPOSE:
+            enhanced.habits.purpose = {
+                pulse: processedData.purposeRating > 7 ? 1 : processedData.purposeRating < 4 ? -1 : 0,
+                volunteerHours: processedData.volunteerHours,
+                goalProgress: processedData.goalProgress
+            };
+            enhanced.scores.purpose = processedData.score;
+            break;
+    }
+    
+    enhanced.ubziComponent = calculateUBZI(enhanced.scores);
+    
+    return enhanced;
+}
+
+// Store enhanced check-in record
+async function storeEnhancedCheckIn(checkInData, ubziScore) {
+    const record = {
+        resident_id: checkInData.residentId,
+        timestamp: Date.parse(checkInData.timestamp), // Store as number for sorting
+        iso_timestamp: checkInData.timestamp,
+        type: checkInData.type || 'habit_checkin',
+        habits: checkInData.habits,
+        scores: checkInData.scores || {},
+        ubzi_component: ubziScore,
+        metadata: checkInData.metadata || {},
+        ttl: Math.floor(Date.now() / 1000) + (90 * 24 * 60 * 60) // 90 days retention
+    };
+    
+    const params = {
+        TableName: CHECKINS_TABLE,
+        Item: record
+    };
+    
+    await dynamodb.put(params).promise();
+    console.log(`Stored enhanced check-in for ${checkInData.residentId} with UBZI: ${ubziScore}`);
+}
+
+// Calculate UBZI from individual habit scores
+function calculateUBZI(scores) {
+    let ubzi = 0;
+    let totalWeight = 0;
+    
+    // Movement (30%)
+    if (scores.movement !== undefined) {
+        ubzi += scores.movement * 0.30;
+        totalWeight += 0.30;
+    }
+    
+    // Plant Slant (25%)
+    if (scores.plantSlant !== undefined) {
+        ubzi += scores.plantSlant * 0.25;
+        totalWeight += 0.25;
+    }
+    
+    // Downshift (20%)
+    if (scores.downshift !== undefined) {
+        ubzi += scores.downshift * 0.20;
+        totalWeight += 0.20;
+    }
+    
+    // Social (15%)
+    if (scores.social !== undefined) {
+        ubzi += scores.social * 0.15;
+        totalWeight += 0.15;
+    }
+    
+    // Purpose (10%)
+    if (scores.purpose !== undefined) {
+        ubzi += scores.purpose * 0.10;
+        totalWeight += 0.10;
+    }
+    
+    // Normalize if not all scores are present
+    return totalWeight > 0 ? Math.round(ubzi / totalWeight * 100) / 100 : 50;
+}
+
+// Trigger habit analytics processing
+async function triggerHabitAnalytics(checkInData) {
+    // In a production system, this would trigger the habit-analyzer Lambda
+    // For now, we'll just log that analytics should be triggered
+    console.log(`Triggering habit analytics for ${checkInData.residentId}`);
+    
+    // Could invoke the habit-analyzer Lambda here:
+    // const lambda = new AWS.Lambda();
+    // await lambda.invoke({
+    //     FunctionName: 'ubz-habit-analyzer',
+    //     InvocationType: 'Event',
+    //     Payload: JSON.stringify({
+    //         analysisType: 'individual',
+    //         residentId: checkInData.residentId,
+    //         checkIn: checkInData
+    //     })
+    // }).promise();
+}
+
+// Helper function to determine time of day
+function getTimeOfDay(timestamp) {
+    const hour = new Date(timestamp).getHours();
+    if (hour < 12) return 'morning';
+    if (hour < 17) return 'afternoon';
+    return 'evening';
+}
 
 // Process habit data based on type
 async function processHabitData(habitType, data) {

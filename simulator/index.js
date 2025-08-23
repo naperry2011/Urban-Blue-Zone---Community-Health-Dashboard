@@ -1,5 +1,11 @@
 const awsIot = require('aws-iot-device-sdk');
 const { v4: uuidv4 } = require('uuid');
+const readline = require('readline');
+const { 
+    generateHabitCheckIn, 
+    generateDailyHabitPattern, 
+    generateHabitAlert 
+} = require('./habits');
 
 // Configuration
 const config = {
@@ -226,45 +232,62 @@ function startVitalsSimulation() {
 
 // Simulate habit check-ins
 function startCheckinsSimulation() {
-    console.log('Starting check-ins simulation...');
+    console.log('Starting enhanced habit check-ins simulation...');
     
-    const habitTypes = ['moveNaturally', 'rightTribe', 'plantSlant', 'downshift', 'purpose'];
-    
-    // Send check-ins for each resident
+    // Send realistic habit check-ins for each resident
     residentProfiles.forEach((resident, index) => {
         // Stagger start times
         setTimeout(() => {
-            // Send different habit check-ins throughout the day
-            habitTypes.forEach((habitType, habitIndex) => {
-                setTimeout(() => {
-                    const sendCheckin = () => {
-                        const data = generateCheckin(resident, habitType);
-                        const topic = `urban-blue-zone/checkins/${resident.id}`;
-                        const message = {
-                            residentId: resident.id,
-                            timestamp: new Date().toISOString(),
-                            habitType: habitType,
-                            data: data
-                        };
-                        
-                        device.publish(topic, JSON.stringify(message), { qos: 1 }, (error) => {
-                            if (error) {
-                                console.error(`Error publishing ${habitType} for ${resident.id}:`, error);
-                            } else {
-                                console.log(`Published ${habitType} check-in for ${resident.id}`);
-                            }
-                        });
-                    };
-                    
-                    sendCheckin(); // Send immediately
-                    // Repeat daily (every 24 hours)
-                    setInterval(sendCheckin, 86400000);
-                    
-                }, habitIndex * 60000); // Stagger habits by 1 minute
-            });
+            // Send habit check-ins based on time of day
+            const sendHabitCheckin = () => {
+                const checkIn = generateHabitCheckIn(resident);
+                const topic = `urban-blue-zone/checkins/${resident.id}`;
+                
+                device.publish(topic, JSON.stringify(checkIn), { qos: 1 }, (error) => {
+                    if (error) {
+                        console.error(`Error publishing habits for ${resident.id}:`, error);
+                    } else {
+                        const habitSummary = `Movement: ${checkIn.habits.movement.score}, ` +
+                                           `Stress: ${checkIn.habits.stress.level}, ` +
+                                           `Social: ${checkIn.habits.social.interactionCount}, ` +
+                                           `UBZI: ${checkIn.ubziComponent}`;
+                        console.log(`✓ ${resident.name} habits - ${habitSummary}`);
+                    }
+                });
+            };
             
-        }, index * 5000); // Stagger residents by 5 seconds
+            // Send initial check-in
+            sendHabitCheckin();
+            
+            // Send check-ins 3 times per day (morning, afternoon, evening)
+            // Morning: 7-9 AM
+            scheduleDaily(7 + Math.random() * 2, sendHabitCheckin);
+            // Afternoon: 1-3 PM  
+            scheduleDaily(13 + Math.random() * 2, sendHabitCheckin);
+            // Evening: 6-8 PM
+            scheduleDaily(18 + Math.random() * 2, sendHabitCheckin);
+            
+        }, index * 3000); // Stagger residents by 3 seconds
     });
+}
+
+// Helper function to schedule daily events at specific hour
+function scheduleDaily(hour, callback) {
+    const now = new Date();
+    const scheduledTime = new Date();
+    scheduledTime.setHours(hour, Math.floor(Math.random() * 60), 0, 0);
+    
+    // If time has passed today, schedule for tomorrow
+    if (scheduledTime <= now) {
+        scheduledTime.setDate(scheduledTime.getDate() + 1);
+    }
+    
+    const timeUntilFirst = scheduledTime - now;
+    
+    setTimeout(() => {
+        callback(); // Run first time
+        setInterval(callback, 24 * 60 * 60 * 1000); // Then repeat daily
+    }, timeUntilFirst);
 }
 
 // Simulate alert scenarios
@@ -334,9 +357,38 @@ function simulateAlertScenario(residentId, scenario) {
     });
 }
 
+// Simulate habit alert scenarios
+function simulateHabitAlertScenario(residentId, scenario) {
+    const resident = residentProfiles.find(r => r.id === residentId);
+    if (!resident) {
+        console.error('Resident not found:', residentId);
+        return;
+    }
+    
+    const checkIn = generateHabitAlert(resident, scenario);
+    const topic = `urban-blue-zone/checkins/${residentId}`;
+    
+    device.publish(topic, JSON.stringify(checkIn), { qos: 1 }, (error) => {
+        if (error) {
+            console.error(`Error publishing habit alert for ${residentId}:`, error);
+        } else {
+            console.log(`🚨 Published ${scenario} habit alert for ${resident.name}`);
+            console.log(`   Alert: ${checkIn.alertMessage}`);
+        }
+    });
+}
+
 // CLI commands for testing
-process.stdin.on('data', (data) => {
-    const command = data.toString().trim();
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    prompt: 'simulator> '
+});
+
+rl.prompt();
+
+rl.on('line', (line) => {
+    const command = line.trim();
     const parts = command.split(' ');
     
     switch (parts[0]) {
@@ -345,26 +397,55 @@ process.stdin.on('data', (data) => {
                 simulateAlertScenario(parts[1], parts[2]);
             } else {
                 console.log('Usage: alert <residentId> <scenario>');
-                console.log('Scenarios: high_bp, critical_bp, low_oxygen, high_temp');
+                console.log('Vital scenarios: high_bp, critical_bp, low_oxygen, high_temp');
+            }
+            break;
+            
+        case 'habit':
+            if (parts.length >= 3) {
+                simulateHabitAlertScenario(parts[1], parts[2]);
+            } else {
+                console.log('Usage: habit <residentId> <scenario>');
+                console.log('Habit scenarios: low_movement_streak, high_stress_streak, social_isolation, poor_nutrition_streak, low_purpose');
             }
             break;
             
         case 'status':
-            console.log('Simulator Status:');
-            console.log('- Connected:', device.connected);
-            console.log('- Residents:', residentProfiles.length);
+            console.log('📊 Simulator Status:');
+            console.log('   Connected:', device.connected ? '✅' : '❌');
+            console.log('   Residents:', residentProfiles.length);
+            console.log('   Topics: vitals/{id}, checkins/{id}');
+            break;
+            
+        case 'residents':
+            console.log('👥 Active Residents:');
+            residentProfiles.forEach(r => {
+                console.log(`   ${r.id}: ${r.name}, ${r.age}yo ${r.type}, conditions: ${r.conditions.join(', ') || 'none'}`);
+            });
             break;
             
         case 'help':
-            console.log('Available commands:');
-            console.log('- alert <residentId> <scenario>: Trigger an alert scenario');
-            console.log('- status: Show simulator status');
-            console.log('- help: Show this help message');
+            console.log('📖 Available commands:');
+            console.log('   alert <residentId> <scenario> - Trigger vital alert');
+            console.log('   habit <residentId> <scenario> - Trigger habit alert');
+            console.log('   status - Show simulator status');
+            console.log('   residents - List all residents');
+            console.log('   help - Show this help message');
+            console.log('   exit - Stop simulator');
+            break;
+            
+        case 'exit':
+            console.log('Goodbye!');
+            device.end();
+            process.exit(0);
             break;
             
         default:
-            console.log('Unknown command. Type "help" for available commands.');
+            if (command) {
+                console.log('Unknown command. Type "help" for available commands.');
+            }
     }
+    rl.prompt();
 });
 
 // Graceful shutdown

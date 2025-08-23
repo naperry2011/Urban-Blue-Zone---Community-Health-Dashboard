@@ -1,8 +1,12 @@
 {
   "permissions": {
-    "defaultMode": "acceptEdits",
     "allow": [
-      "Bash(mkdir:*)"
-    ]
+      "Bash(mkdir:*)",
+      "Bash(dir:*)",
+      "Bash(cmd /c:*)",
+      "Bash(npm install:*)",
+      "Bash(powershell:*)"
+    ],
+    "defaultMode": "acceptEdits"
   }
 }

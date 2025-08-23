@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wellness Update - Urban Blue Zone</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: white;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        .header .subtitle {
+            margin-top: 10px;
+            font-size: 16px;
+            opacity: 0.95;
+        }
+        .content {
+            padding: 30px 20px;
+        }
+        .wellness-card {
+            background-color: #F7F9FC;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .habit-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .habit-item {
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 2px solid #e2e8f0;
+        }
+        .habit-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        .habit-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 5px;
+        }
+        .habit-score {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .score-good { color: #48bb78; }
+        .score-moderate { color: #ed8936; }
+        .score-needs-attention { color: #f56565; }
+        
+        .streak-banner {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .streak-number {
+            font-size: 32px;
+            font-weight: bold;
+        }
+        .suggestions-section {
+            background-color: #fef5e7;
+            border-left: 4px solid #f39c12;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .suggestions-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .suggestion-list {
+            list-style: none;
+            padding: 0;
+        }
+        .suggestion-list li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+        .suggestion-list li:before {
+            content: "💡";
+            position: absolute;
+            left: 0;
+        }
+        .ubzi-section {
+            background-color: #f0f4f8;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .ubzi-label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .ubzi-score {
+            font-size: 48px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .ubzi-trend {
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        .trend-up { color: #48bb78; }
+        .trend-down { color: #f56565; }
+        .resources-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .resource-card {
+            background-color: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            text-decoration: none;
+            color: #333;
+            transition: transform 0.2s;
+        }
+        .resource-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .resource-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        .resource-title {
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌟 Your Wellness Update</h1>
+            <div class="subtitle">Urban Blue Zone Weekly Summary</div>
+        </div>
+        
+        <div class="content">
+            <div class="wellness-card">
+                <p>Hello! Here's your wellness summary for <strong>{{resident_name}}</strong> (ID: {{resident_id}})</p>
+                <p>Week of: {{week_start}} - {{week_end}}</p>
+            </div>
+            
+            <div class="ubzi-section">
+                <div class="ubzi-label">Your Urban Blue Zone Index</div>
+                <div class="ubzi-score">{{ubzi_score}}</div>
+                <div class="ubzi-trend {{trend_class}}">
+                    {{trend_direction}} {{trend_amount}} points from last week
+                </div>
+            </div>
+            
+            {{#if has_streak}}
+            <div class="streak-banner">
+                <div>🔥 Amazing!</div>
+                <div class="streak-number">{{streak_days}} Day Streak</div>
+                <div>{{streak_habit}}</div>
+            </div>
+            {{/if}}
+            
+            <h3>Your Blue Zone Habits</h3>
+            <div class="habit-grid">
+                <div class="habit-item">
+                    <div class="habit-icon">🚶</div>
+                    <div class="habit-name">Move Naturally</div>
+                    <div class="habit-score {{movement_class}}">{{movement_score}}/100</div>
+                </div>
+                <div class="habit-item">
+                    <div class="habit-icon">🧘</div>
+                    <div class="habit-name">Downshift</div>
+                    <div class="habit-score {{stress_class}}">{{stress_score}}/100</div>
+                </div>
+                <div class="habit-item">
+                    <div class="habit-icon">🥗</div>
+                    <div class="habit-name">Plant Slant</div>
+                    <div class="habit-score {{plant_class}}">{{plant_score}}/100</div>
+                </div>
+                <div class="habit-item">
+                    <div class="habit-icon">👥</div>
+                    <div class="habit-name">Right Tribe</div>
+                    <div class="habit-score {{social_class}}">{{social_score}}/100</div>
+                </div>
+                <div class="habit-item">
+                    <div class="habit-icon">✨</div>
+                    <div class="habit-name">Purpose</div>
+                    <div class="habit-score {{purpose_class}}">{{purpose_score}}/100</div>
+                </div>
+            </div>
+            
+            {{#if has_suggestions}}
+            <div class="suggestions-section">
+                <div class="suggestions-title">Personalized Suggestions</div>
+                <ul class="suggestion-list">
+                    {{#each suggestions}}
+                    <li>{{this}}</li>
+                    {{/each}}
+                </ul>
+            </div>
+            {{/if}}
+            
+            <h3>Community Resources</h3>
+            <div class="resources-grid">
+                <a href="{{walking_group_url}}" class="resource-card">
+                    <div class="resource-icon">🚶‍♂️</div>
+                    <div class="resource-title">Walking Groups</div>
+                </a>
+                <a href="{{stress_management_url}}" class="resource-card">
+                    <div class="resource-icon">🧘‍♀️</div>
+                    <div class="resource-title">Stress Management</div>
+                </a>
+                <a href="{{nutrition_url}}" class="resource-card">
+                    <div class="resource-icon">🥦</div>
+                    <div class="resource-title">Nutrition Guides</div>
+                </a>
+                <a href="{{social_events_url}}" class="resource-card">
+                    <div class="resource-icon">🎉</div>
+                    <div class="resource-title">Social Events</div>
+                </a>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Keep up the great work on your wellness journey!</p>
+            <p>Urban Blue Zone Monitoring System</p>
+            <p><a href="{{dashboard_url}}">View Full Dashboard</a> | <a href="{{preferences_url}}">Update Preferences</a></p>
+        </div>
+    </div>
+</body>
+</html>
