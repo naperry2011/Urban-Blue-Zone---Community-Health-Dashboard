@@ -1,51 +1,64 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useAggregations } from "@/app/hooks/useAggregations";
+import { useAlerts } from "@/app/hooks/useAlerts";
+import UBZIGauge from "@/app/components/UBZIGauge";
+import TrendChart from "@/app/components/TrendChart";
+import AlertFeed from "@/app/components/AlertFeed";
+import ErrorBoundary from "@/app/components/ErrorBoundary";
 
-interface AggregationData {
-  systemUBZI: number;
-  totalResidents: number;
-  activeAlerts: number;
-  cohorts: {
-    senior: { count: number; avgUBZI: number };
-    adult: { count: number; avgUBZI: number };
-    teen: { count: number; avgUBZI: number };
-  };
-  trends: {
-    daily: number[];
-    weekly: number[];
-  };
-}
-
-export default function DashboardPage() {
+function DashboardContent() {
   const { data: session } = useSession();
-  const [aggregations, setAggregations] = useState<AggregationData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { aggregations, isLoading, isError } = useAggregations();
+  const { alerts, alertCounts } = useAlerts();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch("/api/aggregations");
-        const data = await response.json();
-        setAggregations(data);
-      } catch (error) {
-        console.error("Failed to fetch aggregations:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="px-4 sm:px-0">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/4 mb-8"></div>
+
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="bg-white overflow-hidden shadow rounded-lg">
+                <div className="p-5">
+                  <div className="h-6 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-10 bg-gray-200 rounded"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <div className="bg-white p-6 rounded-lg shadow h-96">
+              <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
+              <div className="h-64 bg-gray-100 rounded"></div>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow h-96">
+              <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
+              <div className="h-64 bg-gray-100 rounded"></div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
+
+  if (isError) {
+    return (
+      <div className="px-4 sm:px-0">
+        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg">
+          <h3 className="font-medium">Failed to load dashboard data</h3>
+          <p className="text-sm mt-1">Please try refreshing the page.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const previousUBZI = aggregations?.trends?.daily?.[5] || 70;
+  const trendValue = aggregations ? ((aggregations.systemUBZI - previousUBZI) / previousUBZI) * 100 : 0;
 
   return (
     <div className="px-4 sm:px-0">
@@ -54,12 +67,12 @@ export default function DashboardPage() {
           Urban Blue Zone Dashboard
         </h1>
         <p className="mt-2 text-sm text-gray-600">
-          Welcome back, {session?.user?.email}
+          Welcome back, {session?.user?.email || "Development Mode"}
         </p>
       </div>
 
       {/* System Overview Cards */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
         <div className="bg-white overflow-hidden shadow rounded-lg">
           <div className="p-5">
             <div className="flex items-center">
@@ -79,13 +92,19 @@ export default function DashboardPage() {
                     <div className="text-2xl font-semibold text-gray-900">
                       {aggregations?.systemUBZI || 0}
                     </div>
-                    <div className="ml-2 flex items-baseline text-sm font-semibold text-green-600">
-                      <svg className="self-center flex-shrink-0 h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                      </svg>
-                      <span className="sr-only">Increased by</span>
-                      2.1%
-                    </div>
+                    {trendValue !== 0 && (
+                      <div className={`ml-2 flex items-baseline text-sm font-semibold ${trendValue > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        <svg className={`self-center flex-shrink-0 h-5 w-5 ${trendValue > 0 ? 'text-green-500' : 'text-red-500'}`} fill="currentColor" viewBox="0 0 20 20">
+                          {trendValue > 0 ? (
+                            <path fillRule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                          ) : (
+                            <path fillRule="evenodd" d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 012 0v7.586l2.293-2.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          )}
+                        </svg>
+                        <span className="sr-only">{trendValue > 0 ? 'Increased' : 'Decreased'} by</span>
+                        {Math.abs(trendValue).toFixed(1)}%
+                      </div>
+                    )}
                   </dd>
                 </dl>
               </div>
@@ -121,7 +140,7 @@ export default function DashboardPage() {
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <div className="rounded-md bg-yellow-500 p-3">
+                <div className={`rounded-md ${alertCounts.critical > 0 ? 'bg-red-500' : alertCounts.warning > 0 ? 'bg-yellow-500' : 'bg-green-500'} p-3`}>
                   <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                   </svg>
@@ -132,8 +151,15 @@ export default function DashboardPage() {
                   <dt className="text-sm font-medium text-gray-500 truncate">
                     Active Alerts
                   </dt>
-                  <dd className="text-2xl font-semibold text-gray-900">
-                    {aggregations?.activeAlerts || 0}
+                  <dd className="flex items-baseline">
+                    <div className="text-2xl font-semibold text-gray-900">
+                      {alertCounts.total}
+                    </div>
+                    {alertCounts.critical > 0 && (
+                      <span className="ml-2 text-sm font-medium text-red-600">
+                        {alertCounts.critical} critical
+                      </span>
+                    )}
                   </dd>
                 </dl>
               </div>
@@ -157,7 +183,7 @@ export default function DashboardPage() {
                     Trend
                   </dt>
                   <dd className="text-2xl font-semibold text-gray-900">
-                    Improving
+                    {trendValue > 0 ? 'Improving' : trendValue < 0 ? 'Declining' : 'Stable'}
                   </dd>
                 </dl>
               </div>
@@ -166,29 +192,90 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Cohort Summary */}
-      <div className="mt-8">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">Cohort Performance</h2>
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-          {aggregations?.cohorts && Object.entries(aggregations.cohorts).map(([key, cohort]) => (
-            <div key={key} className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <h3 className="text-lg font-medium text-gray-900 capitalize">{key}</h3>
-                <dl className="mt-3 grid grid-cols-2 gap-4">
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">Count</dt>
-                    <dd className="mt-1 text-xl font-semibold text-gray-900">{cohort.count}</dd>
+      {/* Main Dashboard Content */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 mb-8">
+        <div className="lg:col-span-2">
+          <ErrorBoundary>
+            <TrendChart
+              data={aggregations?.historicalData || []}
+              title="UBZI Score Trends"
+              showCohortComparison={true}
+              type="area"
+            />
+          </ErrorBoundary>
+        </div>
+        <div className="lg:col-span-1">
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">System Health</h3>
+            <ErrorBoundary>
+              <UBZIGauge
+                value={aggregations?.systemUBZI || 0}
+                size="medium"
+                showTrend={true}
+                trendValue={trendValue}
+              />
+            </ErrorBoundary>
+          </div>
+        </div>
+      </div>
+
+      {/* Cohort Summary and Alert Feed */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div>
+          <h2 className="text-lg font-medium text-gray-900 mb-4">Cohort Performance</h2>
+          <div className="grid grid-cols-1 gap-4">
+            {aggregations?.cohorts && Object.entries(aggregations.cohorts).map(([key, cohort]) => (
+              <div key={key} className="bg-white overflow-hidden shadow rounded-lg">
+                <div className="p-5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-medium text-gray-900 capitalize">{key}</h3>
+                      <dl className="mt-3 grid grid-cols-2 gap-4">
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500">Count</dt>
+                          <dd className="mt-1 text-xl font-semibold text-gray-900">{cohort.count}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500">Avg UBZI</dt>
+                          <dd className="mt-1 text-xl font-semibold text-gray-900">{cohort.avgUBZI}</dd>
+                        </div>
+                      </dl>
+                    </div>
+                    <div className="ml-4">
+                      <ErrorBoundary>
+                        <UBZIGauge
+                          value={cohort.avgUBZI}
+                          size="small"
+                          showTrend={false}
+                        />
+                      </ErrorBoundary>
+                    </div>
                   </div>
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">Avg UBZI</dt>
-                    <dd className="mt-1 text-xl font-semibold text-gray-900">{cohort.avgUBZI}</dd>
-                  </div>
-                </dl>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <ErrorBoundary>
+            <AlertFeed
+              alerts={alerts}
+              maxAlerts={10}
+              autoRefresh={true}
+              refreshInterval={15000}
+            />
+          </ErrorBoundary>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <ErrorBoundary>
+      <DashboardContent />
+    </ErrorBoundary>
   );
 }
