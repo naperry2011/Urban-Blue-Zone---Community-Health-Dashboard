@@ -9,6 +9,7 @@ interface UBZIGaugeProps {
   size?: "small" | "medium" | "large";
   showTrend?: boolean;
   trendValue?: number;
+  showLegend?: boolean;
 }
 
 const UBZIGauge: React.FC<UBZIGaugeProps> = ({
@@ -17,6 +18,7 @@ const UBZIGauge: React.FC<UBZIGaugeProps> = ({
   size = "medium",
   showTrend = true,
   trendValue = 0,
+  showLegend = true,
 }) => {
   const normalizedValue = Math.min(100, Math.max(0, value));
 
@@ -27,7 +29,7 @@ const UBZIGauge: React.FC<UBZIGaugeProps> = ({
   };
 
   const sizeConfig = {
-    small: { width: 150, height: 150, fontSize: "text-2xl" },
+    small: { width: 120, height: 120, fontSize: "text-xl" },
     medium: { width: 250, height: 250, fontSize: "text-4xl" },
     large: { width: 350, height: 350, fontSize: "text-6xl" },
   };
@@ -118,20 +120,22 @@ const UBZIGauge: React.FC<UBZIGaugeProps> = ({
         </div>
       )}
 
-      <div className="mt-4 flex items-center space-x-6 text-xs">
-        <div className="flex items-center">
-          <div className="w-3 h-3 bg-red-500 rounded-full mr-1"></div>
-          <span className="text-gray-600">Low (&lt;40)</span>
+      {showLegend && (
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs">
+          <div className="flex items-center">
+            <div className="w-2 h-2 bg-red-500 rounded-full mr-1"></div>
+            <span className="text-gray-600 whitespace-nowrap">Low<span className="hidden sm:inline"> (&lt;40)</span></span>
+          </div>
+          <div className="flex items-center">
+            <div className="w-2 h-2 bg-yellow-500 rounded-full mr-1"></div>
+            <span className="text-gray-600 whitespace-nowrap">Moderate<span className="hidden sm:inline"> (40-70)</span></span>
+          </div>
+          <div className="flex items-center">
+            <div className="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
+            <span className="text-gray-600 whitespace-nowrap">Good<span className="hidden sm:inline"> (&gt;70)</span></span>
+          </div>
         </div>
-        <div className="flex items-center">
-          <div className="w-3 h-3 bg-yellow-500 rounded-full mr-1"></div>
-          <span className="text-gray-600">Moderate (40-70)</span>
-        </div>
-        <div className="flex items-center">
-          <div className="w-3 h-3 bg-green-500 rounded-full mr-1"></div>
-          <span className="text-gray-600">Good (&gt;70)</span>
-        </div>
-      </div>
+      )}
     </div>
   );
 };

@@ -3,10 +3,37 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
+import { useEffect, useRef } from "react";
 
 export default function Header() {
   const pathname = usePathname();
   const { data: session } = useSession();
+  const navRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!navRef.current) return;
+
+      const navLinks = navRef.current.querySelectorAll('a');
+      const currentIndex = Array.from(navLinks).findIndex(
+        link => link === document.activeElement
+      );
+
+      if (e.key === 'ArrowRight' && currentIndex < navLinks.length - 1) {
+        e.preventDefault();
+        (navLinks[currentIndex + 1] as HTMLElement).focus();
+      } else if (e.key === 'ArrowLeft' && currentIndex > 0) {
+        e.preventDefault();
+        (navLinks[currentIndex - 1] as HTMLElement).focus();
+      }
+    };
+
+    const nav = navRef.current;
+    if (nav) {
+      nav.addEventListener('keydown', handleKeyDown);
+      return () => nav.removeEventListener('keydown', handleKeyDown);
+    }
+  }, []);
 
   const navItems = [
     { href: "/dashboard", label: "Dashboard" },
@@ -28,12 +55,12 @@ export default function Header() {
             </Link>
           </div>
 
-          <nav className="hidden md:flex space-x-8">
+          <nav ref={navRef} className="hidden md:flex space-x-8" role="navigation" aria-label="Main navigation">
             {navItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`inline-flex items-center px-1 pt-1 text-sm font-medium ${
+                className={`inline-flex items-center px-1 pt-1 text-sm font-medium keyboard-focus rounded-sm ${
                   pathname === item.href
                     ? "text-blue-600 border-b-2 border-blue-600"
                     : "text-gray-500 hover:text-gray-700 hover:border-gray-300"

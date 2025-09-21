@@ -1,0 +1,116 @@
+config:
+  target: 'http://localhost:3000'
+  phases:
+    - duration: 60
+      arrivalRate: 10
+      name: "Warm up"
+    - duration: 120
+      arrivalRate: 25
+      name: "Ramp up load"
+    - duration: 180
+      arrivalRate: 50
+      name: "Peak load - 100 concurrent users"
+    - duration: 60
+      arrivalRate: 25
+      name: "Ramp down"
+  defaults:
+    headers:
+      Content-Type: "application/json"
+  processor: "./load-test-functions.js"
+
+scenarios:
+  - name: "Dashboard Load Test"
+    weight: 40
+    flow:
+      - get:
+          url: "/"
+          capture:
+            - json: "$.ubziScore"
+              as: "currentUBZI"
+      - think: 2
+      - get:
+          url: "/api/dashboard/overview"
+          headers:
+            Authorization: "Bearer {{ $randomString() }}"
+      - think: 1
+      - get:
+          url: "/api/alerts/recent"
+
+  - name: "Cohort Comparison Load Test"
+    weight: 30
+    flow:
+      - get:
+          url: "/cohorts"
+      - think: 3
+      - get:
+          url: "/api/cohorts/senior/metrics"
+      - get:
+          url: "/api/cohorts/adult/metrics"
+      - get:
+          url: "/api/cohorts/teen/metrics"
+      - get:
+          url: "/api/cohorts/chronic/metrics"
+      - think: 2
+      - get:
+          url: "/api/cohorts/comparison?period=7d"
+
+  - name: "Resident Detail Load Test"
+    weight: 20
+    flow:
+      - function: "generateResidentId"
+      - get:
+          url: "/residents/{{ residentId }}"
+      - think: 4
+      - get:
+          url: "/api/residents/{{ residentId }}/vitals?period=24h"
+      - get:
+          url: "/api/residents/{{ residentId }}/habits?period=7d"
+      - get:
+          url: "/api/residents/{{ residentId }}/alerts"
+      - think: 2
+      - get:
+          url: "/api/residents/{{ residentId }}/ubzi-history?period=30d"
+
+  - name: "Data Ingestion Load Test"
+    weight: 10
+    flow:
+      - function: "generateVitalSigns"
+      - post:
+          url: "/api/vitals"
+          json:
+            residentId: "{{ residentId }}"
+            timestamp: "{{ timestamp }}"
+            vitals: "{{ vitals }}"
+      - function: "generateHabitCheckin"
+      - post:
+          url: "/api/checkins"
+          json:
+            residentId: "{{ residentId }}"
+            timestamp: "{{ timestamp }}"
+            habits: "{{ habits }}"
+
+expect:
+  - statusCode: 200
+  - contentType: json
+  - hasProperty: "data"
+
+metrics:
+  - name: "response_time_percentiles"
+    percentiles:
+      - 50
+      - 95
+      - 99
+  - name: "error_rate"
+    threshold: 5 # Max 5% error rate
+  - name: "requests_per_second"
+    threshold: 100 # Min 100 RPS
+
+before:
+  flow:
+    - log: "Starting load test with 100 concurrent users simulation"
+    - log: "Testing dashboard, cohorts, resident details, and data ingestion"
+
+after:
+  flow:
+    - log: "Load test completed"
+    - function: "generateReport"

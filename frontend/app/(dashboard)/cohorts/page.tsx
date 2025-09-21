@@ -74,39 +74,40 @@ export default function CohortsPage() {
   }
 
   return (
-    <div className="px-4 sm:px-0">
+    <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Cohort Analysis</h1>
-        <p className="mt-2 text-sm text-gray-600">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Cohort Analysis</h1>
+        <p className="mt-2 text-sm sm:text-base text-gray-600">
           Compare wellness metrics across different population groups
         </p>
       </div>
 
       {/* System Statistics */}
-      <div className="bg-white shadow-sm rounded-lg p-6 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <div className="text-sm text-gray-600">Total Residents</div>
-            <div className="text-2xl font-bold text-gray-900">
+      <div className="bg-white shadow-sm rounded-lg p-4 sm:p-6 mb-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">System Overview</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+          <div className="text-center sm:text-left">
+            <div className="text-xs sm:text-sm text-gray-600 mb-1">Total Residents</div>
+            <div className="text-xl sm:text-2xl font-bold text-gray-900">
               {systemStats.totalResidents}
             </div>
           </div>
-          <div>
-            <div className="text-sm text-gray-600">System Average UBZI</div>
-            <div className="text-2xl font-bold text-blue-600">
+          <div className="text-center sm:text-left">
+            <div className="text-xs sm:text-sm text-gray-600 mb-1">System Average UBZI</div>
+            <div className="text-xl sm:text-2xl font-bold text-blue-600">
               {systemStats.avgSystemUBZI}
             </div>
           </div>
-          <div>
-            <div className="text-sm text-gray-600">Active Alerts</div>
-            <div className="text-2xl font-bold text-yellow-600">
+          <div className="text-center sm:text-left">
+            <div className="text-xs sm:text-sm text-gray-600 mb-1">Active Alerts</div>
+            <div className="text-xl sm:text-2xl font-bold text-yellow-600">
               {systemStats.totalAlerts}
             </div>
           </div>
-          <div>
-            <div className="text-sm text-gray-600">Critical Alerts</div>
-            <div className="text-2xl font-bold text-red-600">
+          <div className="text-center sm:text-left">
+            <div className="text-xs sm:text-sm text-gray-600 mb-1">Critical Alerts</div>
+            <div className="text-xl sm:text-2xl font-bold text-red-600">
               {systemStats.criticalAlerts}
             </div>
           </div>
@@ -114,8 +115,9 @@ export default function CohortsPage() {
       </div>
 
       {/* Filters and Controls */}
-      <div className="bg-white shadow-sm rounded-lg p-4 mb-6">
-        <div className="space-y-4">
+      <div className="bg-white shadow-sm rounded-lg p-4 sm:p-6 mb-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Filters & Controls</h2>
+        <div className="space-y-4 sm:space-y-6">
           {/* Date Range Picker */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -128,16 +130,18 @@ export default function CohortsPage() {
           </div>
 
           {/* Cohort Filter and Sort */}
-          <div className="flex items-center justify-between">
-            <CohortFilter
-              cohorts={cohorts}
-              selectedCohorts={selectedCohorts}
-              onFilterChange={setSelectedCohorts}
-              sortBy={sortBy}
-              onSortChange={handleSortChange}
-            />
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex-1">
+              <CohortFilter
+                cohorts={cohorts}
+                selectedCohorts={selectedCohorts}
+                onFilterChange={setSelectedCohorts}
+                sortBy={sortBy}
+                onSortChange={handleSortChange}
+              />
+            </div>
 
-            <div className="flex items-center space-x-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               <button
                 onClick={() => setComparisonMode(!comparisonMode)}
                 className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
@@ -150,7 +154,7 @@ export default function CohortsPage() {
               </button>
               <button
                 onClick={exportData}
-                className="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700"
+                className="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 transition-colors"
               >
                 Export Data
               </button>
@@ -161,38 +165,70 @@ export default function CohortsPage() {
 
       {/* Cohort Cards Grid */}
       {isLoading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="text-gray-500">Loading cohort data...</div>
+        <div className="flex items-center justify-center h-64 bg-white rounded-lg shadow-sm">
+          <div className="text-center">
+            <div className="text-4xl mb-4">⏳</div>
+            <div className="text-gray-500 text-lg">Loading cohort data...</div>
+          </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {filteredCohorts.map((cohort) => (
-            <CohortCard
-              key={cohort.id}
-              cohort={cohort}
-              isSelected={comparisonMode && selectedCohorts.includes(cohort.id)}
-              onSelect={handleCohortSelect}
-              comparisonMode={comparisonMode}
-              systemAverage={systemStats.avgSystemUBZI}
-            />
-          ))}
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            Cohort Details ({filteredCohorts.length} of {cohorts.length} shown)
+          </h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8">
+            {filteredCohorts.map((cohort) => (
+              <CohortCard
+                key={cohort.id}
+                cohort={cohort}
+                isSelected={comparisonMode && selectedCohorts.includes(cohort.id)}
+                onSelect={handleCohortSelect}
+                comparisonMode={comparisonMode}
+                systemAverage={systemStats.avgSystemUBZI}
+              />
+            ))}
+          </div>
         </div>
       )}
 
       {/* Comparison Summary (shown in comparison mode) */}
       {comparisonMode && selectedCohorts.length > 1 && (
-        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h3 className="text-lg font-semibold text-blue-900 mb-3">
-            Comparison Summary
+        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4 sm:p-6">
+          <h3 className="text-lg font-semibold text-blue-900 mb-4">
+            Comparison Summary ({selectedCohorts.length} cohorts selected)
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredCohorts
               .filter(c => selectedCohorts.includes(c.id))
               .map(cohort => (
-                <div key={cohort.id} className="bg-white rounded p-3">
-                  <div className="font-medium text-gray-900">{cohort.name}</div>
-                  <div className="text-sm text-gray-600 mt-1">
-                    UBZI: {cohort.metrics.avgUBZI} | Alerts: {cohort.metrics.activeAlerts}
+                <div key={cohort.id} className="bg-white rounded-lg p-4 border border-gray-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-lg">{getIconForCohort(cohort.name)}</span>
+                    <div className="font-medium text-gray-900">{cohort.name}</div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <span className="text-gray-600">UBZI:</span>
+                      <span className="font-medium ml-1">{cohort.metrics.avgUBZI}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Alerts:</span>
+                      <span className="font-medium ml-1">{cohort.metrics.activeAlerts}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Members:</span>
+                      <span className="font-medium ml-1">{cohort.metrics.memberCount}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Trend:</span>
+                      <span className={`font-medium ml-1 ${
+                        cohort.metrics.ubziTrend > 0 ? 'text-green-600' :
+                        cohort.metrics.ubziTrend < 0 ? 'text-red-600' : 'text-gray-600'
+                      }`}>
+                        {cohort.metrics.ubziTrend > 0 ? '↑' : cohort.metrics.ubziTrend < 0 ? '↓' : '→'}
+                        {Math.abs(cohort.metrics.ubziTrend)}%
+                      </span>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -201,4 +237,20 @@ export default function CohortsPage() {
       )}
     </div>
   );
+
+  // Helper function for cohort icons
+  function getIconForCohort(name: string) {
+    switch (name.toLowerCase()) {
+      case "seniors":
+        return "👴";
+      case "adults":
+        return "👨";
+      case "teens":
+        return "👦";
+      case "chronic conditions":
+        return "❤️";
+      default:
+        return "👥";
+    }
+  }
 }

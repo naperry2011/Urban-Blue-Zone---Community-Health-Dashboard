@@ -6,12 +6,16 @@ interface Props {
   children: ReactNode;
   fallback?: ReactNode;
   onError?: (error: Error, errorInfo: React.ErrorInfo) => void;
+  showDetails?: boolean;
+  resetKeys?: Array<string | number>;
+  resetOnPropsChange?: boolean;
 }
 
 interface State {
   hasError: boolean;
   error: Error | null;
   errorInfo: React.ErrorInfo | null;
+  retryCount: number;
 }
 
 class ErrorBoundary extends Component<Props, State> {
@@ -21,15 +25,25 @@ class ErrorBoundary extends Component<Props, State> {
       hasError: false,
       error: null,
       errorInfo: null,
+      retryCount: 0,
     };
   }
 
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): Partial<State> {
     return {
       hasError: true,
       error,
       errorInfo: null,
     };
+  }
+
+  componentDidUpdate(prevProps: Props) {
+    const { resetKeys, resetOnPropsChange } = this.props;
+    const { hasError } = this.state;
+
+    if (hasError && prevProps.resetKeys !== resetKeys && resetOnPropsChange) {
+      this.handleReset();
+    }
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
@@ -46,11 +60,28 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   handleReset = () => {
-    this.setState({
+    this.setState(prevState => ({
       hasError: false,
       error: null,
       errorInfo: null,
-    });
+      retryCount: prevState.retryCount + 1,
+    }));
+  };
+
+  getErrorMessage = (error: Error | null): string => {
+    if (!error) return 'An unexpected error occurred';
+
+    if (error.message.includes('Network')) {
+      return 'Network error. Please check your connection and try again.';
+    }
+    if (error.message.includes('Permission')) {
+      return 'Permission denied. Please check your access rights.';
+    }
+    if (error.message.includes('Not found')) {
+      return 'The requested resource was not found.';
+    }
+
+    return error.message || 'An unexpected error occurred';
   };
 
   render() {
@@ -79,8 +110,13 @@ class ErrorBoundary extends Component<Props, State> {
               Something went wrong
             </h3>
             <p className="mt-1 text-sm text-gray-500">
-              {this.state.error?.message || "An unexpected error occurred"}
+              {this.getErrorMessage(this.state.error)}
             </p>
+            {this.state.retryCount > 0 && (
+              <p className="mt-1 text-xs text-gray-400">
+                Retry attempt {this.state.retryCount}
+              </p>
+            )}
             <div className="mt-6">
               <button
                 onClick={this.handleReset}
@@ -89,7 +125,7 @@ class ErrorBoundary extends Component<Props, State> {
                 Try again
               </button>
             </div>
-            {process.env.NODE_ENV === "development" && this.state.errorInfo && (
+            {(this.props.showDetails || process.env.NODE_ENV === "development") && this.state.errorInfo && (
               <details className="mt-6 text-left text-xs text-gray-500">
                 <summary className="cursor-pointer hover:text-gray-700">
                   Error details
