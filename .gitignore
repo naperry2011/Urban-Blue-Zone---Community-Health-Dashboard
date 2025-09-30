@@ -56,6 +56,15 @@ next-env.d.ts
 *.pem
 *.key
 *.crt
+*.tfplan
+*.tfvars
+.env.aws
+.env.production
+.env.staging
+
+# Lambda deployment packages
+backend/**/*.zip
+*.zip
 
 # Python
 __pycache__/

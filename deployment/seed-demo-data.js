@@ -14,11 +14,11 @@ const { DynamoDBDocumentClient, PutCommand, BatchWriteCommand } = require('@aws-
 const config = {
   region: process.env.AWS_REGION || 'us-east-1',
   tables: {
-    residents: process.env.RESIDENTS_TABLE || 'ubz-prod-residents',
-    vitals: process.env.VITALS_TABLE || 'ubz-prod-vitals',
-    checkins: process.env.CHECKINS_TABLE || 'ubz-prod-checkins',
-    alerts: process.env.ALERTS_TABLE || 'ubz-prod-alerts',
-    aggregations: process.env.AGGREGATIONS_TABLE || 'ubz-prod-aggregations'
+    residents: process.env.RESIDENTS_TABLE || 'ubz-demo-residents',
+    vitals: process.env.VITALS_TABLE || 'ubz-demo-vitals',
+    checkins: process.env.CHECKINS_TABLE || 'ubz-demo-checkins',
+    alerts: process.env.ALERTS_TABLE || 'ubz-demo-alerts',
+    aggregations: process.env.AGGREGATIONS_TABLE || 'ubz-demo-aggregations'
   }
 };
 
@@ -151,9 +151,13 @@ function generateCheckinsData(residentId, daysBack = 30) {
 function generateAggregationData(residentId) {
   const now = Date.now();
   const currentUBZI = 65 + Math.random() * 30; // 65-95
+  const today = new Date().toISOString().split('T')[0];
 
   return {
+    agg_key: `resident#${residentId}#${today}`,
+    metric: 'ubzi',
     resident_id: residentId,
+    date: today,
     timestamp: now,
     period: 'daily',
     ubzi_score: Math.round(currentUBZI),

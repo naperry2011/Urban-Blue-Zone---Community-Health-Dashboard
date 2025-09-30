@@ -35,8 +35,8 @@ resource "aws_ses_domain_identity" "main" {
 # Configuration set for tracking
 resource "aws_ses_configuration_set" "main" {
   name = "${var.resource_prefix}-config-set"
-  
-  reputation_tracking_enabled = true
+
+  reputation_metrics_enabled = true
 }
 
 # Event destination for tracking
@@ -44,7 +44,8 @@ resource "aws_ses_event_destination" "cloudwatch" {
   name                   = "${var.resource_prefix}-cloudwatch"
   configuration_set_name = aws_ses_configuration_set.main.name
   enabled                = true
-  
+  matching_types         = ["send", "delivery", "bounce", "complaint"]
+
   cloudwatch_destination {
     default_value  = "default"
     dimension_name = "MessageTag"
@@ -59,32 +60,23 @@ resource "aws_ses_template" "critical_alert" {
   html    = file("${path.module}/../../../backend/alerts/templates/critical-alert.html")
   text    = <<-EOT
     CRITICAL HEALTH ALERT
-    
-    Alert Time: {{timestamp}}
-    Resident ID: {{resident_id}}
-    Alert Type: {{alert_type}}
-    
-    Current Vital Signs:
-    {{#if blood_pressure}}Blood Pressure: {{blood_pressure}}{{/if}}
-    {{#if heart_rate}}Heart Rate: {{heart_rate}} bpm{{/if}}
-    {{#if oxygen_saturation}}Oxygen Saturation: {{oxygen_saturation}}%{{/if}}
-    {{#if temperature}}Temperature: {{temperature}}°F{{/if}}
-    
+
+    Alert Time: $${timestamp}
+    Resident ID: $${resident_id}
+    Alert Type: $${alert_type}
+
+    Current Vital Signs: $${vital_signs}
+
     IMMEDIATE ACTIONS REQUIRED:
     - Contact resident immediately to assess condition
     - Review recent vital trends in dashboard
     - Consider emergency services if unable to reach resident
     - Document intervention in care notes
-    
-    {{#if additional_details}}
-    Additional Information:
-    {{additional_details}}
-    {{/if}}
-    
-    Alert ID: {{alert_id}}
-    
-    View Full Dashboard: {{dashboard_url}}
-    
+
+    Alert ID: $${alert_id}
+
+    View Full Dashboard: $${dashboard_url}
+
     This is an automated alert from Urban Blue Zone Monitoring System
   EOT
 }
@@ -96,42 +88,31 @@ resource "aws_ses_template" "wellness_nudge" {
   text    = <<-EOT
     Your Wellness Update
     Urban Blue Zone Weekly Summary
-    
-    Hello! Here's your wellness summary for {{resident_name}} (ID: {{resident_id}})
-    Week of: {{week_start}} - {{week_end}}
-    
-    Your Urban Blue Zone Index: {{ubzi_score}}
-    {{trend_direction}} {{trend_amount}} points from last week
-    
-    {{#if has_streak}}
-    Amazing! {{streak_days}} Day Streak - {{streak_habit}}
-    {{/if}}
-    
+
+    Hello! Here's your wellness summary for $${resident_name} (ID: $${resident_id})
+    Week of: $${week_start} - $${week_end}
+
+    Your Urban Blue Zone Index: $${ubzi_score}
+    $${trend_direction} $${trend_amount} points from last week
+
     Your Blue Zone Habits:
-    - Move Naturally: {{movement_score}}/100
-    - Downshift: {{stress_score}}/100
-    - Plant Slant: {{plant_score}}/100
-    - Right Tribe: {{social_score}}/100
-    - Purpose: {{purpose_score}}/100
-    
-    {{#if has_suggestions}}
-    Personalized Suggestions:
-    {{#each suggestions}}
-    - {{this}}
-    {{/each}}
-    {{/if}}
-    
+    - Move Naturally: $${movement_score}/100
+    - Downshift: $${stress_score}/100
+    - Plant Slant: $${plant_score}/100
+    - Right Tribe: $${social_score}/100
+    - Purpose: $${purpose_score}/100
+
     Community Resources:
-    - Walking Groups: {{walking_group_url}}
-    - Stress Management: {{stress_management_url}}
-    - Nutrition Guides: {{nutrition_url}}
-    - Social Events: {{social_events_url}}
-    
+    - Walking Groups: $${walking_group_url}
+    - Stress Management: $${stress_management_url}
+    - Nutrition Guides: $${nutrition_url}
+    - Social Events: $${social_events_url}
+
     Keep up the great work on your wellness journey!
-    
-    View Full Dashboard: {{dashboard_url}}
-    Update Preferences: {{preferences_url}}
-    
+
+    View Full Dashboard: $${dashboard_url}
+    Update Preferences: $${preferences_url}
+
     Urban Blue Zone Monitoring System
   EOT
 }

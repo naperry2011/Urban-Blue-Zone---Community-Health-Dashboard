@@ -1,78 +1,36 @@
 import { NextRequest, NextResponse } from "next/server";
+import { scanAlerts, getResident } from "../../lib/dynamodb";
 
 export async function GET(request: NextRequest) {
   try {
-    // TODO: Integrate with AWS DynamoDB/API Gateway
-    // For now, return mock alert data
-    const now = new Date();
-    const mockAlerts = [
-      {
-        id: "alert-001",
-        timestamp: new Date(now.getTime() - 5 * 60000).toISOString(),
-        severity: "critical" as const,
-        residentId: "res-001",
-        residentName: "John Smith",
-        message: "Blood pressure critically high",
-        metric: "Systolic BP",
-        value: 185,
-        threshold: 160,
-        resolved: false,
-      },
-      {
-        id: "alert-002",
-        timestamp: new Date(now.getTime() - 15 * 60000).toISOString(),
-        severity: "warning" as const,
-        residentId: "res-002",
-        residentName: "Mary Johnson",
-        message: "Low activity detected for 3 days",
-        metric: "Daily Steps",
-        value: 1200,
-        threshold: 3000,
-        resolved: false,
-      },
-      {
-        id: "alert-003",
-        timestamp: new Date(now.getTime() - 30 * 60000).toISOString(),
-        severity: "info" as const,
-        residentId: "res-003",
-        residentName: "Robert Davis",
-        message: "Missed meditation session",
-        metric: "Stress Management",
-        value: 0,
-        threshold: 1,
-        resolved: true,
-      },
-      {
-        id: "alert-004",
-        timestamp: new Date(now.getTime() - 45 * 60000).toISOString(),
-        severity: "warning" as const,
-        residentId: "res-004",
-        residentName: "Linda Wilson",
-        message: "Heart rate elevated during rest",
-        metric: "Resting Heart Rate",
-        value: 95,
-        threshold: 85,
-        resolved: false,
-      },
-      {
-        id: "alert-005",
-        timestamp: new Date(now.getTime() - 60 * 60000).toISOString(),
-        severity: "info" as const,
-        residentId: "res-005",
-        residentName: "Michael Brown",
-        message: "Social interaction below weekly target",
-        metric: "Social Hours",
-        value: 2,
-        threshold: 5,
-        resolved: false,
-      },
-    ];
+    // Fetch alerts from DynamoDB
+    const dbAlerts = await scanAlerts();
 
-    const alertCounts = mockAlerts.reduce(
+    // Transform and enrich alerts with resident names
+    const alerts = await Promise.all(
+      dbAlerts.map(async (alert: any) => {
+        const resident = await getResident(alert.resident_id).catch(() => null);
+
+        return {
+          id: alert.alert_id,
+          timestamp: alert.created_at || new Date(alert.timestamp).toISOString(),
+          severity: alert.severity === 'high' ? 'critical' : alert.severity === 'medium' ? 'warning' : 'info',
+          residentId: alert.resident_id,
+          residentName: resident?.name || 'Unknown',
+          message: alert.message,
+          metric: alert.metric,
+          value: alert.value,
+          threshold: alert.threshold,
+          resolved: alert.status === 'resolved',
+        };
+      })
+    );
+
+    const alertCounts = alerts.reduce(
       (acc, alert) => {
         if (!alert.resolved) {
           acc.total++;
-          acc[alert.severity]++;
+          acc[alert.severity as 'critical' | 'warning' | 'info']++;
         }
         return acc;
       },
@@ -80,7 +38,7 @@ export async function GET(request: NextRequest) {
     );
 
     return NextResponse.json({
-      alerts: mockAlerts,
+      alerts: alerts,
       ...alertCounts,
     });
   } catch (error) {

@@ -1,0 +1,17 @@
+{
+  "name": "ubz-deployment-tools",
+  "version": "1.0.0",
+  "description": "Urban Blue Zone deployment and seeding tools",
+  "main": "seed-demo-data.js",
+  "scripts": {
+    "seed": "node seed-demo-data.js",
+    "test": "echo \"No tests configured\""
+  },
+  "keywords": ["urban-blue-zone", "demo", "seeding"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.679.0",
+    "@aws-sdk/lib-dynamodb": "^3.679.0"
+  }
+}

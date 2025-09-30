@@ -51,12 +51,12 @@ module "iot" {
 # Lambda Functions
 module "lambda" {
   source = "./modules/lambda"
-  
+
   resource_prefix = local.resource_prefix
   runtime         = var.lambda_runtime
   timeout         = var.lambda_timeout
   memory_size     = var.lambda_memory
-  
+
   dynamodb_tables = {
     residents    = module.dynamodb.residents_table_name
     vitals       = module.dynamodb.vitals_table_name
@@ -64,10 +64,14 @@ module "lambda" {
     alerts       = module.dynamodb.alerts_table_name
     aggregations = module.dynamodb.aggregations_table_name
   }
-  
-  iot_endpoint = module.iot.endpoint
-  api_gateway_id = module.api_gateway.api_id
-  
+
+  iot_endpoint               = module.iot.endpoint
+  api_gateway_id             = module.api_gateway.api_id
+  sns_topic_arn              = module.sns.alert_topic_arn
+  sns_critical_topic_arn     = module.sns.critical_alerts_topic_arn
+  sns_wellness_topic_arn     = module.sns.wellness_nudges_topic_arn
+  ses_from_email             = var.alert_email
+
   tags = local.common_tags
 }
 

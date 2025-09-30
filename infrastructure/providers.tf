@@ -13,7 +13,7 @@ terraform {
   }
   
   backend "s3" {
-    bucket         = "ubz-terraform-state"
+    bucket         = "ubz-terraform-state-378664616416"
     key            = "demo/terraform.tfstate"
     region         = "us-east-1"
     encrypt        = true
@@ -23,13 +23,12 @@ terraform {
 
 provider "aws" {
   region = var.aws_region
-  
+
   default_tags {
     tags = {
       Project     = "UrbanBlueZone"
       Environment = var.environment
       ManagedBy   = "Terraform"
-      CreatedAt   = timestamp()
     }
   }
 }
