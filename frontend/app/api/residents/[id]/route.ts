@@ -202,12 +202,14 @@ function generateResidentProfile(id: string): Resident {
   };
 }
 
+type RouteParams = Promise<{ id: string }>;
+
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: RouteParams }
 ) {
+  const { id } = await params;
   try {
-    const { id } = params;
     const { searchParams } = new URL(request.url);
     const timeRange = searchParams.get('timeRange') || '7d';
 

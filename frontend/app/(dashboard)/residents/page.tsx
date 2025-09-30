@@ -23,16 +23,16 @@ export default function ResidentsPage() {
       return matchesSearch && matchesCohort;
     });
 
-    filtered.sort((a, b) => {
-      let aVal: string | number | Date = a[sortBy];
-      let bVal: string | number | Date = b[sortBy];
+    filtered.sort((a: ResidentListItem, b: ResidentListItem) => {
+      let aVal: string | number | Date = a[sortBy as keyof ResidentListItem] as any;
+      let bVal: string | number | Date = b[sortBy as keyof ResidentListItem] as any;
 
       if (sortBy === 'lastActivity') {
         aVal = new Date(aVal).getTime();
         bVal = new Date(bVal).getTime();
       }
 
-      if (typeof aVal === 'string') {
+      if (typeof aVal === 'string' && typeof bVal === 'string') {
         aVal = aVal.toLowerCase();
         bVal = bVal.toLowerCase();
       }
@@ -241,7 +241,7 @@ export default function ResidentsPage() {
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredAndSortedResidents.map((resident) => (
+          {filteredAndSortedResidents.map((resident: ResidentListItem) => (
             <Link
               key={resident.id}
               href={`/dashboard/residents/${resident.id}`}

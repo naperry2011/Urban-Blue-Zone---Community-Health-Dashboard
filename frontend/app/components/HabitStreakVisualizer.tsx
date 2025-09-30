@@ -124,7 +124,7 @@ const HabitStreakVisualizer: React.FC<HabitStreakVisualizerProps> = ({
 
   // Current habits overview data
   const overviewData = Object.entries(habitConfig).map(([key, config]) => {
-    const progress = config.inverted
+    const progress = (key === 'stress' && 'inverted' in config && config.inverted)
       ? ((10 - config.current) / (10 - config.target)) * 100
       : (config.current / config.target) * 100;
 

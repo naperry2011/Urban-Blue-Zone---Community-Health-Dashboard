@@ -189,10 +189,9 @@ export default function ResidentDetailPage() {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Current Urban Blue Zone Index</h3>
             <div className="flex justify-center">
               <UBZIGauge
-                score={resident.metrics.currentUBZI}
-                trend={resident.metrics.ubziTrend}
+                value={resident.metrics.currentUBZI}
                 size="large"
-                showComparison={false}
+                showTrend={true}
               />
             </div>
           </div>

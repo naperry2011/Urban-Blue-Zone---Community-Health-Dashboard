@@ -1,0 +1,223 @@
+{
+  "DistributionConfig": {
+    "CallerReference": "ubz-distribution-${TIMESTAMP}",
+    "Comment": "Urban Blue Zone CloudFront Distribution",
+    "Enabled": true,
+    "HttpVersion": "http2and3",
+    "PriceClass": "PriceClass_100",
+    "IsIPV6Enabled": true,
+
+    "Origins": {
+      "Quantity": 3,
+      "Items": [
+        {
+          "Id": "nextjs-server-origin",
+          "DomainName": "${API_GATEWAY_URL}",
+          "CustomOriginConfig": {
+            "HTTPPort": 80,
+            "HTTPSPort": 443,
+            "OriginProtocolPolicy": "https-only",
+            "OriginSslProtocols": {
+              "Quantity": 3,
+              "Items": ["TLSv1", "TLSv1.1", "TLSv1.2"]
+            },
+            "OriginReadTimeout": 30,
+            "OriginKeepaliveTimeout": 5
+          },
+          "CustomHeaders": {
+            "Quantity": 1,
+            "Items": [
+              {
+                "HeaderName": "X-Forwarded-Host",
+                "HeaderValue": "${DOMAIN_NAME}"
+              }
+            ]
+          }
+        },
+        {
+          "Id": "s3-static-origin",
+          "DomainName": "${S3_BUCKET}.s3.amazonaws.com",
+          "S3OriginConfig": {
+            "OriginAccessIdentity": "origin-access-identity/cloudfront/${OAI_ID}"
+          }
+        },
+        {
+          "Id": "api-gateway-origin",
+          "DomainName": "${API_GATEWAY_URL}",
+          "CustomOriginConfig": {
+            "HTTPPort": 80,
+            "HTTPSPort": 443,
+            "OriginProtocolPolicy": "https-only",
+            "OriginSslProtocols": {
+              "Quantity": 3,
+              "Items": ["TLSv1", "TLSv1.1", "TLSv1.2"]
+            }
+          }
+        }
+      ]
+    },
+
+    "DefaultCacheBehavior": {
+      "TargetOriginId": "nextjs-server-origin",
+      "ViewerProtocolPolicy": "redirect-to-https",
+      "AllowedMethods": {
+        "Quantity": 7,
+        "Items": ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"],
+        "CachedMethods": {
+          "Quantity": 2,
+          "Items": ["GET", "HEAD"]
+        }
+      },
+      "Compress": true,
+      "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6",
+      "OriginRequestPolicyId": "88a5eaf4-2fd4-4709-b370-b4c650ea3fcf",
+      "ResponseHeadersPolicyId": "${RESPONSE_HEADERS_POLICY_ID}",
+      "FunctionAssociations": {
+        "Quantity": 1,
+        "Items": [
+          {
+            "EventType": "viewer-request",
+            "FunctionARN": "${CLOUDFRONT_FUNCTION_ARN}"
+          }
+        ]
+      }
+    },
+
+    "CacheBehaviors": {
+      "Quantity": 5,
+      "Items": [
+        {
+          "PathPattern": "/_next/static/*",
+          "TargetOriginId": "s3-static-origin",
+          "ViewerProtocolPolicy": "redirect-to-https",
+          "AllowedMethods": {
+            "Quantity": 2,
+            "Items": ["GET", "HEAD"],
+            "CachedMethods": {
+              "Quantity": 2,
+              "Items": ["GET", "HEAD"]
+            }
+          },
+          "Compress": true,
+          "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6",
+          "TrustedSigners": {
+            "Enabled": false,
+            "Quantity": 0
+          }
+        },
+        {
+          "PathPattern": "/public/*",
+          "TargetOriginId": "s3-static-origin",
+          "ViewerProtocolPolicy": "redirect-to-https",
+          "AllowedMethods": {
+            "Quantity": 2,
+            "Items": ["GET", "HEAD"],
+            "CachedMethods": {
+              "Quantity": 2,
+              "Items": ["GET", "HEAD"]
+            }
+          },
+          "Compress": true,
+          "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6"
+        },
+        {
+          "PathPattern": "/api/*",
+          "TargetOriginId": "api-gateway-origin",
+          "ViewerProtocolPolicy": "redirect-to-https",
+          "AllowedMethods": {
+            "Quantity": 7,
+            "Items": ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"],
+            "CachedMethods": {
+              "Quantity": 2,
+              "Items": ["GET", "HEAD"]
+            }
+          },
+          "Compress": false,
+          "CachePolicyId": "4135ea2d-6df8-44a3-9df3-4b5a84be39ad",
+          "OriginRequestPolicyId": "b689b0a8-53d0-40ab-baf2-68738e2966ac"
+        },
+        {
+          "PathPattern": "/dashboard*",
+          "TargetOriginId": "nextjs-server-origin",
+          "ViewerProtocolPolicy": "redirect-to-https",
+          "AllowedMethods": {
+            "Quantity": 2,
+            "Items": ["GET", "HEAD"],
+            "CachedMethods": {
+              "Quantity": 2,
+              "Items": ["GET", "HEAD"]
+            }
+          },
+          "Compress": true,
+          "DefaultTTL": 15,
+          "MaxTTL": 15,
+          "MinTTL": 0
+        },
+        {
+          "PathPattern": "/cohorts*",
+          "TargetOriginId": "nextjs-server-origin",
+          "ViewerProtocolPolicy": "redirect-to-https",
+          "AllowedMethods": {
+            "Quantity": 2,
+            "Items": ["GET", "HEAD"],
+            "CachedMethods": {
+              "Quantity": 2,
+              "Items": ["GET", "HEAD"]
+            }
+          },
+          "Compress": true,
+          "DefaultTTL": 15,
+          "MaxTTL": 15,
+          "MinTTL": 0
+        }
+      ]
+    },
+
+    "CustomErrorResponses": {
+      "Quantity": 3,
+      "Items": [
+        {
+          "ErrorCode": 404,
+          "ResponsePagePath": "/404",
+          "ResponseCode": "404",
+          "ErrorCachingMinTTL": 300
+        },
+        {
+          "ErrorCode": 500,
+          "ResponsePagePath": "/500",
+          "ResponseCode": "500",
+          "ErrorCachingMinTTL": 60
+        },
+        {
+          "ErrorCode": 503,
+          "ResponsePagePath": "/503",
+          "ResponseCode": "503",
+          "ErrorCachingMinTTL": 60
+        }
+      ]
+    },
+
+    "ViewerCertificate": {
+      "CloudFrontDefaultCertificate": false,
+      "ACMCertificateArn": "${ACM_CERTIFICATE_ARN}",
+      "SSLSupportMethod": "sni-only",
+      "MinimumProtocolVersion": "TLSv1.2_2021",
+      "Certificate": "${ACM_CERTIFICATE_ARN}",
+      "CertificateSource": "acm"
+    },
+
+    "Aliases": {
+      "Quantity": 1,
+      "Items": ["${DOMAIN_NAME}"]
+    },
+
+    "Logging": {
+      "Enabled": true,
+      "IncludeCookies": false,
+      "Bucket": "${LOG_BUCKET}.s3.amazonaws.com",
+      "Prefix": "cloudfront-logs/"
+    },
+
+    "WebACLId": "${WEB_ACL_ID}"
+  }
+}
